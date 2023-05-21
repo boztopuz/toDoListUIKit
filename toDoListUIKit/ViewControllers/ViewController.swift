@@ -18,14 +18,44 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         self.title = "Tasks"
         navigationController?.navigationBar.prefersLargeTitles = true
-        tableView.delegate = self
-        tableView.dataSource = self
+        self.tableView.delegate = self
+        self.tableView.dataSource = self
         
+        // Setup
+        if !UserDefaults().bool(forKey: "setup"){
+            UserDefaults().set(true, forKey: "setup")
+            UserDefaults().set(0, forKey: "count")
+        }
+        
+        // Get current saved tasks
+        updateTasks()
+        
+    }
+    
+    func updateTasks(){
+        
+        tasks.removeAll()
+        guard let count = UserDefaults().value(forKey: "count") as? Int else {
+            return
+        }
+        
+        for x in 0..<count {
+            if let task = UserDefaults().value(forKey: "task_\(x+1)") as? String {
+                tasks.append(task)
+            }
+        }
+        tableView.reloadData()
+
     }
 
     @IBAction func didTapAdd(){
         let vc = storyboard?.instantiateViewController(withIdentifier: "entry") as! EntriesViewController
         vc.title = "New Task"
+        vc.update = {
+            DispatchQueue.main.async {
+                self.updateTasks()
+            }
+        }
         navigationController?.pushViewController(vc, animated: true)
     }
 
@@ -44,7 +74,9 @@ extension ViewController: UITableViewDataSource{
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = tasks[indexPath.row]
+        var content = cell.defaultContentConfiguration()
+        content.text = tasks[indexPath.row]
+        cell.contentConfiguration = content
         return cell
     }
 }
